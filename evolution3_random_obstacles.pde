@@ -32,7 +32,7 @@ boolean DEBUG = true;
 // ALSO NOTE: y-values increase as you go down.  So 3 is in the air, and -3 is in the ground.  0 is the surface.
 final Rectangle[] RECTANGLES = {
 // Lower stairs
-new Rectangle(2,-0.2,7,1),     
+new Rectangle(2,-0.2,7,1),
 new Rectangle(4,-0.4,9,1),
 new Rectangle(6,-0.6,11,1),
 new Rectangle(8,-0.8,13,1),
@@ -46,7 +46,7 @@ new Rectangle(20,-2.0,25,1)
 
 // Whether to randomize the rectangles
 final boolean RANDOMIZE_RECTANGLES = true;
-// Mutability factor for randomizing the rectangles. 
+// Mutability factor for randomizing the rectangles.
 final float RECTANGLES_MUTABILITY_FACTOR = 1.2;
 
 float histMinValue = -1; //histogram information
@@ -62,8 +62,9 @@ ArrayList<Integer[]> speciesCounts = new ArrayList<Integer[]>(0);
 ArrayList<Integer> topSpeciesCounts = new ArrayList<Integer>(0);
 ArrayList<Creature> creatureDatabase = new ArrayList<Creature>(0);
 ArrayList<Rectangle> rects = new ArrayList<Rectangle>(0);
-// Historical rectangles in case of rectangles randomization.
-ArrayList<ArrayList<Rectangle>> rectsHistory = new ArrayList<ArrayList<Rectangle>>;
+// Historical rectangles in case of rectangles randomization. The index is the 
+// generation number.
+ArrayList<ArrayList<Rectangle>> rectsHistory = new ArrayList<ArrayList<Rectangle>>(0);
 PGraphics graphImage;
 PGraphics screenImage;
 PGraphics popUpImage;
@@ -90,6 +91,7 @@ int timer = 0;
 float cam = 0;
 int frames = 60;
 int menu = 0;
+// The current generation
 int gen = -1;
 float sliderX = 1170;
 int genSelected = 0;
@@ -511,7 +513,7 @@ class Creature{
 }
 void drawGround(int toImage){
   if(toImage == 0){
-    noStroke();    
+    noStroke();
     fill(0,130,0);
     if(haveGround) rect(0,windowHeight*0.8,windowWidth,windowHeight*0.2);
     for(int i = 0; i < rects.size(); i++){
@@ -582,7 +584,7 @@ void drawPosts(int toImage){
     }
   }else if(toImage == 2){
     popUpImage.textAlign(CENTER);
-    popUpImage.textFont(font, 0.96/camzoom); 
+    popUpImage.textFont(font, 0.96/camzoom);
     popUpImage.noStroke();
     float w = 450;
     float h = 450;
@@ -901,13 +903,13 @@ void mouseWheel(MouseEvent event) {
       if(camzoom < 0.006){
         camzoom = 0.006;
       }
-      textFont(font, 0.96/camzoom); 
+      textFont(font, 0.96/camzoom);
     }else if(delta == 1){
       camzoom *= 1.1;
       if(camzoom > 0.1){
         camzoom = 0.1;
       }
-      textFont(font, 0.96/camzoom); 
+      textFont(font, 0.96/camzoom);
     }
   }
 }
@@ -930,7 +932,11 @@ void openMiniSimulation(){
     int id;
     Creature cj;
     if(statusWindow <= -1){
-      cj = creatureDatabase.get((genSelected-1)*3+statusWindow+3);
+        // Load rectangles for selected generation
+        int simGen = genSelected - 1;
+        rects = rectsHistory.get(simGen);
+      cj = creatureDatabase.get(simGen*3+statusWindow+3);
+        writeLog("Doing mini simulation for creature " + cj.id + ". Rects gen: " + simGen);
       id = cj.id;
     }else{
       id = statusWindow;
@@ -1241,34 +1247,34 @@ void setup(){
   for(int i = 0; i < 101; i++){
     beginSpecies[i] = 500;
   }
-  
+
   percentile.add(beginPercentile);
   barCounts.add(beginBar);
   speciesCounts.add(beginSpecies);
   topSpeciesCounts.add(0);
-  
+
   graphImage = createGraphics(975,570,P2D);
   screenImage = createGraphics(1280,720,P2D);
   popUpImage = createGraphics(450,450,P2D);
   segBarImage = createGraphics(975,150,P2D);
-  font = loadFont("Helvetica-Bold-96.vlw"); 
+  font = loadFont("Helvetica-Bold-96.vlw");
   textFont(font, 96);
   textAlign(CENTER);
+  
+  // Initialize rectangles. First gen gets unrandomized ones.
   for(int i = 0; i < RECTANGLES.length; i++){
     rects.add(RECTANGLES[i]);
   }
+  rectsHistory.add(rects);
 }
-void writeLog(object toLog){
+void writeLog(String toLog){
   if(DEBUG) println(toLog);
 }
 void randomizeRectangles(){
   if(!RANDOMIZE_RECTANGLES)
     return;
     
-  // Save rectangles to history to properly re-simulate historical creatures.
-  historicalRects.add(rects);
-  
-  rects = new ArrayList<Rectangle>;
+  rects = new ArrayList<Rectangle>(0);
   for(int i = 0; i < RECTANGLES.length; i++){
     float x1 = RECTANGLES[i].x1 * (1 + random(-1, 1) * (RECTANGLES_MUTABILITY_FACTOR - 1));
     float y1 = RECTANGLES[i].y1 * (1 + random(-1, 1) * (RECTANGLES_MUTABILITY_FACTOR - 1));
@@ -1276,8 +1282,19 @@ void randomizeRectangles(){
     float y2 = RECTANGLES[i].y2 * (1 + random(-1, 1) * (RECTANGLES_MUTABILITY_FACTOR - 1));
     writeLog("New rectangle " + i + ": (" + x1 + ", " + y1 + ")-(" + x2 + ", " + y2 +")");
     Rectangle newRect = new Rectangle(x1, y1, x2, y2);
-    rects.add(newRect);    
+    rects.add(newRect);
   }
+  
+  // Save rectangles for this generation to history to properly re-simulate historical creatures.
+  // As this method is called once for each generation, the ArrayList index is on par with "gen".
+  // TODO: replace by a (resizable) associative array, if there is one.
+  rectsHistory.add(rects);
+
+  
+  ArrayList<Rectangle> fromHistory = rectsHistory.get(gen);
+  writeLog("From rectsHistory(" + gen + "): " + fromHistory.get(0).x1);
+  fromHistory = rectsHistory.get(gen + 1);
+  writeLog("From rectsHistory(" + (gen + 1) + "): " + fromHistory.get(0).x1);
 }
 void draw(){
   scale(1);
@@ -1395,8 +1412,15 @@ void draw(){
     textFont(font, 24);
     text("Here are your 1000 randomly generated creatures!!!",windowWidth/2-200,690);
     text("Back",windowWidth-250,690);
-  }else if(menu == 4){
-    setGlobalVariables(c[creaturesTested]);
+  }else if(menu == 4){ // Start simulation
+      // Load latest rects, as they might have changed when watching previous
+      // generations.
+      // gen hasn't been increased at this point yet.
+    if(gen > 0) {
+      writeLog("Loading rects for generation " + (gen));
+      rects = rectsHistory.get(gen);
+    }
+  setGlobalVariables(c[creaturesTested]);
     camzoom = 0.01;
     setMenu(5);
     if(stepbystepslow){
@@ -1405,7 +1429,7 @@ void draw(){
       }else{
         speed = min(creaturesTested*3-9,1000);
       }
-    }else{   
+    }else{
       for(int i = 0; i < 1000; i++){
         setGlobalVariables(c[i]);
         for(int s = 0; s < 900; s++){
@@ -1421,7 +1445,7 @@ void draw(){
   if(menu == 5){ //simulate running
     if(timer <= 900){
       textAlign(CENTER);
-      textFont(font, 0.96/camzoom); 
+      textFont(font, 0.96/camzoom);
       background(120,200,255);
       for(int s = 0; s < speed; s++){
         if(timer < 900){
@@ -1497,7 +1521,7 @@ void draw(){
     creatureDatabase.add(c2.get(999).copyCreature(-1));
     creatureDatabase.add(c2.get(499).copyCreature(-1));
     creatureDatabase.add(c2.get(0).copyCreature(-1));
-    
+
     Integer[] beginBar = new Integer[barLen];
     for(int i = 0; i < barLen; i++){
       beginBar[i] = 0;
@@ -1695,4 +1719,3 @@ void draw(){
   }
   overallTimer++;
 }
-
