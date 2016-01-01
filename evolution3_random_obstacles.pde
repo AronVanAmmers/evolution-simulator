@@ -1,3 +1,5 @@
+/* OpenProcessing Tweak of *@*http://www.openprocessing.org/sketch/205807*@* */
+/* !do not delete the line above, required for linking your tweak if you upload again */
 // Last edited January 17, 2013, UNTIL I brought it back on June 19, 2015!
 
 //These are the easy-to-edit variables.
@@ -9,13 +11,16 @@ final float WINDOW_SIZE = 1.0; // window size multiplier.  If it's 1, the size i
 // The seed that determines all random factors in the simulation. Same seed = same simulation results,
 // different seed = different simulation results.  Make sure USE_RANDOM_SEED is true for this.
 final float SORT_ANIMATION_SPEED = 5.0; // Determines speed of sorting animation.  Higher number is faster.
-final float MINIMUM_NODE_SIZE = 0.4; // Note: all units are 20 cm.  Meaning, a value of 1 equates to a 20 cm node.
-final float MAXIMUM_NODE_SIZE = 0.4;
+final float MINIMUM_NODE_SIZE = 0.1; // Note: all units are 20 cm.  Meaning, a value of 1 equates to a 20 cm node.
+final float MAXIMUM_NODE_SIZE = 1;
 final float MINIMUM_NODE_FRICTION = 0.0;
 final float MAXIMUM_NODE_FRICTION = 1.0;
 final float GRAVITY = 0.005; // higher = more friction.
 final float AIR_FRICTION = 0.95; // The lower the number, the more friction.  1 = no friction.  Above 1 = chaos.
-final float MUTABILITY_FACTOR = 1.0; // How fast the creatures mutate.  1 is normal.
+final float MUTABILITY_FACTOR = 1.1; // How fast the creatures mutate.  1 is normal.
+
+final int CREATURE_MIN_NODES = 6;
+final int CREATURE_MIN_MUSCLES = 8;
 
 boolean haveGround = true;  // true if the ground exists, false if no ground.
 
@@ -23,16 +28,17 @@ boolean haveGround = true;  // true if the ground exists, false if no ground.
 // two opposite vertices.  NOTE: The units are 20 cm, so 1 = 20 cm, and 5 = 1 m.
 // ALSO NOTE: y-values increase as you go down.  So 3 is in the air, and -3 is in the ground.  0 is the surface.
 final Rectangle[] RECTANGLES = {
-/*new Rectangle(2,-0.4,7,1),     //Example hurdles
-new Rectangle(4,-0.8,9,1),
-new Rectangle(6,-1.2,11,1),
-new Rectangle(8,-1.6,13,1),
-new Rectangle(10,-2,15,1),
-new Rectangle(12,-2.4,17,1),
-new Rectangle(14,-2.8,19,1),
-new Rectangle(16,-3.2,21,1),
-new Rectangle(18,-3.6,23,1),
-new Rectangle(20,-4.0,25,1)*/
+// Lower stairs
+new Rectangle(2,-0.2,7,1),     
+new Rectangle(4,-0.4,9,1),
+new Rectangle(6,-0.6,11,1),
+new Rectangle(8,-0.8,13,1),
+new Rectangle(10,-1,15,1),
+new Rectangle(12,-1.2,17,1),
+new Rectangle(14,-1.4,19,1),
+new Rectangle(16,-1.6,21,1),
+new Rectangle(18,-1.8,23,1),
+new Rectangle(20,-2.0,25,1)
 };
 
 float histMinValue = -1; //histogram information
@@ -350,16 +356,16 @@ class Creature{
     for(int i = 0; i < m.size(); i++){
       modifiedCreature.m.add(m.get(i).modifyMuscle(n.size(),mutability));
     }
-    if(random(0,1) < 0.04*mutability*MUTABILITY_FACTOR || n.size() <= 2){ //Add a node
+    if(random(0,1) < 0.04*mutability*MUTABILITY_FACTOR || n.size() <= CREATURE_MIN_NODES - 1){ //Add a node
       modifiedCreature.addRandomNode();
     }
     if(random(0,1) < 0.04*mutability*MUTABILITY_FACTOR){ //Add a muscle
       modifiedCreature.addRandomMuscle(-1,-1);
     }
-    if(random(0,1) < 0.04*mutability*MUTABILITY_FACTOR && modifiedCreature.n.size() >= 4){ //Remove a node
+    if(random(0,1) < 0.04*mutability*MUTABILITY_FACTOR && modifiedCreature.n.size() >= CREATURE_MIN_NODES + 1){ //Remove a node
       modifiedCreature.removeRandomNode();
     }
-    if(random(0,1) < 0.04*mutability*MUTABILITY_FACTOR && modifiedCreature.m.size() >= 2){ //Remove a muscle
+    if(random(0,1) < 0.04*mutability*MUTABILITY_FACTOR && modifiedCreature.m.size() >= CREATURE_MIN_MUSCLES + 1){ //Remove a muscle
       modifiedCreature.removeRandomMuscle();
     }
     modifiedCreature.checkForOverlap();
@@ -765,10 +771,10 @@ ArrayList<Creature> quickSort(ArrayList<Creature> c){
       Creature ci = c.get(i);
       if(ci.d == c0.d){
         equal.add(ci);
-      }else if(ci.d < c0.d){
-        less.add(ci);
-      }else{
+      }else if(ci.d > c0.d){
         more.add(ci);
+      }else{
+        less.add(ci);
       }
     }
     ArrayList<Creature> total = new ArrayList<Creature>();
@@ -878,7 +884,7 @@ Creature[] c = new Creature[1000];
 ArrayList<Creature> c2 = new ArrayList<Creature>();
 
 void mouseWheel(MouseEvent event) {
-  int delta = event.getCount();
+  int delta = -1;//event.getCount();
   if(menu == 5){
     if(delta == -1){
       camzoom *= 0.9090909;
@@ -1312,7 +1318,7 @@ void draw(){
       for(int x = 0; x < 40; x++){
         n.clear();
         m.clear();
-        int nodeNum = int(random(3,6));
+        int nodeNum = int(random(CREATURE_MIN_NODES, 2* CREATURE_MIN_NODES));
         int muscleNum = int(random(nodeNum-1,nodeNum*3-6));
         for(int i = 0; i < nodeNum; i++){
           n.add(new Node(random(-1,1),random(-1,1),0,0,
