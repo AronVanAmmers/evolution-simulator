@@ -24,6 +24,9 @@ final int CREATURE_MIN_MUSCLES = 8;
 
 boolean haveGround = true;  // true if the ground exists, false if no ground.
 
+// Log debug messages
+boolean DEBUG = true;
+
 //Add rectangular obstacles by filling up this array of rectangles.  The parameters are x1, y1, x2, y2, specifying
 // two opposite vertices.  NOTE: The units are 20 cm, so 1 = 20 cm, and 5 = 1 m.
 // ALSO NOTE: y-values increase as you go down.  So 3 is in the air, and -3 is in the ground.  0 is the surface.
@@ -41,6 +44,11 @@ new Rectangle(18,-1.8,23,1),
 new Rectangle(20,-2.0,25,1)
 };
 
+// Whether to randomize the rectangles
+final boolean RANDOMIZE_RECTANGLES = true;
+// Mutability factor for randomizing the rectangles. 
+final float RECTANGLES_MUTABILITY_FACTOR = 1.2;
+
 float histMinValue = -1; //histogram information
 float histMaxValue = 8;
 int histBarsPerMeter = 10;
@@ -54,6 +62,8 @@ ArrayList<Integer[]> speciesCounts = new ArrayList<Integer[]>(0);
 ArrayList<Integer> topSpeciesCounts = new ArrayList<Integer>(0);
 ArrayList<Creature> creatureDatabase = new ArrayList<Creature>(0);
 ArrayList<Rectangle> rects = new ArrayList<Rectangle>(0);
+// Historical rectangles in case of rectangles randomization.
+ArrayList<ArrayList<Rectangle>> rectsHistory = new ArrayList<ArrayList<Rectangle>>;
 PGraphics graphImage;
 PGraphics screenImage;
 PGraphics popUpImage;
@@ -1248,6 +1258,27 @@ void setup(){
     rects.add(RECTANGLES[i]);
   }
 }
+void writeLog(object toLog){
+  if(DEBUG) println(toLog);
+}
+void randomizeRectangles(){
+  if(!RANDOMIZE_RECTANGLES)
+    return;
+    
+  // Save rectangles to history to properly re-simulate historical creatures.
+  historicalRects.add(rects);
+  
+  rects = new ArrayList<Rectangle>;
+  for(int i = 0; i < RECTANGLES.length; i++){
+    float x1 = RECTANGLES[i].x1 * (1 + random(-1, 1) * (RECTANGLES_MUTABILITY_FACTOR - 1));
+    float y1 = RECTANGLES[i].y1 * (1 + random(-1, 1) * (RECTANGLES_MUTABILITY_FACTOR - 1));
+    float x2 = RECTANGLES[i].x2 * (1 + random(-1, 1) * (RECTANGLES_MUTABILITY_FACTOR - 1));
+    float y2 = RECTANGLES[i].y2 * (1 + random(-1, 1) * (RECTANGLES_MUTABILITY_FACTOR - 1));
+    writeLog("New rectangle " + i + ": (" + x1 + ", " + y1 + ")-(" + x2 + ", " + y2 +")");
+    Rectangle newRect = new Rectangle(x1, y1, x2, y2);
+    rects.add(newRect);    
+  }
+}
 void draw(){
   scale(1);
   if(menu == 0){
@@ -1311,6 +1342,7 @@ void draw(){
       }
     }
   }else if(menu == 2){
+    // Create a new set of nodes
     creatures = 0;
     camzoom = 0.12;
     background(220,253,102);
@@ -1584,8 +1616,9 @@ void draw(){
       setMenu(12);
     }
   }
-  if(menu == 12){ //Reproduce and mutate
+  if(menu == 12){ //Reproduce and mutate. I.e. get ready for next round.
     justGotBack = true;
+    randomizeRectangles();
     for(int j = 0; j < 500; j++){
       int j2 = j;
       if(!c2.get(j).alive) j2 = 999-j;
