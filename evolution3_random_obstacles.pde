@@ -17,15 +17,26 @@ final float MINIMUM_NODE_FRICTION = 0.0;
 final float MAXIMUM_NODE_FRICTION = 1.0;
 final float GRAVITY = 0.005; // higher = more friction.
 final float AIR_FRICTION = 0.95; // The lower the number, the more friction.  1 = no friction.  Above 1 = chaos.
-final float MUTABILITY_FACTOR = 1.1; // How fast the creatures mutate.  1 is normal.
+final float MUTABILITY_FACTOR = 1.05; // How fast the creatures mutate.  1 is normal.
 
-final int CREATURE_MIN_NODES = 6;
+// Minimum amount of nodes per creature. Creatures will never mutate below
+// this amount of nodes.
+final int CREATURE_MIN_NODES = 8;
+// Minimum amount of muscles per creature. This isn't always respected as sometimes
+// muscles have to be removed in case of an invalid structure (see checkForOverlap())
 final int CREATURE_MIN_MUSCLES = 8;
 
-boolean haveGround = true;  // true if the ground exists, false if no ground.
+// The amount of seconds the simulation runs and is counted for fitness.
+final int SIMULATION_SECONDS = 30;
+
+final boolean haveGround = true;  // true if the ground exists, false if no ground.
 
 // Log debug messages
-boolean DEBUG = true;
+final boolean DEBUG = true;
+
+// Speed for showing the creature previews. 1 = real time, 2 = 2x speed, etc. If preview animations
+// are slow on your system, increase this value.
+final int MINI_SIMULATION_SPEED = 2;
 
 //Add rectangular obstacles by filling up this array of rectangles.  The parameters are x1, y1, x2, y2, specifying
 // two opposite vertices.  NOTE: The units are 20 cm, so 1 = 20 cm, and 5 = 1 m.
@@ -54,6 +65,9 @@ float histMaxValue = 8;
 int histBarsPerMeter = 10;
 
 // Okay, that's all the easy to edit stuff.
+
+final int FRAMES_PER_SECOND = 60;
+final int SIMULATION_FRAMES = SIMULATION_SECONDS * FRAMES_PER_SECOND;
 
 PFont font;
 ArrayList<Float[]> percentile = new ArrayList<Float[]>(0);
@@ -882,6 +896,8 @@ void simulate(){
   }
   simulationTimer++;
 }
+// Calculate the distance for the current creature, by taking the average of the x coordinates
+// of all its nodes.
 void setAverage(){
   average = 0;
   for(int i = 0; i < n.size(); i++){
@@ -889,6 +905,12 @@ void setAverage(){
     average += ni.x;
   }
   average = average/n.size();
+  
+  // Workaround for bug where creatures fall through blocks and get an enormous distance (in the millions)
+  if(average > 10000) {
+    writeLog ("Discarding erroneous result of " + average);
+    average = 0;
+  }
 }
 ArrayList<Node> n = new ArrayList<Node>();
 ArrayList<Muscle> m = new ArrayList<Muscle>();
@@ -927,18 +949,24 @@ void mousePressed(){
 
 void openMiniSimulation(){
   simulationTimer = 0;
+  speed = MINI_SIMULATION_SPEED;
+  
+  // In the main window, the animation performs slower. Increase speed to let it show at normal speed.
+  if(statusWindow < 0)
+    speed = speed * 2;
+    
   if(gensToDo == 0){
     miniSimulation = true;
     int id;
     Creature cj;
     if(statusWindow <= -1){
-        // Load rectangles for selected generation
-        int simGen = genSelected - 1;
-        rects = rectsHistory.get(simGen);
+      // Load rectangles for selected generation
+      int simGen = genSelected - 1;
+      rects = rectsHistory.get(simGen);
       cj = creatureDatabase.get(simGen*3+statusWindow+3);
-        writeLog("Doing mini simulation for creature " + cj.id + ". Rects gen: " + simGen);
       id = cj.id;
     }else{
+      // Showing a creature in the creature overview, after sorting.
       id = statusWindow;
       cj = c2.get(id);
     }
@@ -970,18 +998,21 @@ void mouseReleased(){
     setMenu(2);
   }else if(menu == 1 && gen >= 0 && abs(mX-990) <= 230){
     if(abs(mY-40) <= 20){
+      // Full animation of a generation
       setMenu(4);
       creaturesTested = 0;
       stepbystep = true;
       stepbystepslow = true;
     }
     if(abs(mY-90) <= 20){
+      // 1 quick generation
       setMenu(4);
       creaturesTested = 0;
       stepbystep = true;
       stepbystepslow = false;
     }
     if(abs(mY-140) <= 20){
+      // ASAP generation, 1 or unlimited (ALAP)
       if(mX < 990){
         gensToDo = 1;
       }else{
@@ -1067,7 +1098,7 @@ void drawpopUpImage(){
   cam += (average-cam)*0.1;
   popUpImage.beginDraw();
   popUpImage.smooth();
-  if(simulationTimer < 900){
+  if(simulationTimer < SIMULATION_FRAMES){
     popUpImage.background(120,200,255);
   }else{
     popUpImage.background(60,100,128);
@@ -1216,8 +1247,15 @@ void drawStatusWindow(){
     text(int(simulationTimer/60),px2+285,py2+36);
     textAlign(LEFT);
     text(nf(average/5.0,0,3),px2+15,py2+36);
-    simulate();
-    timer++;
+    
+    // Respect set speed for minisimulation.
+    for(int s = 0; s < speed; s++){
+      if(timer < SIMULATION_FRAMES){
+        simulate();
+        timer++;
+      }
+    }
+    
     int shouldBeWatching = statusWindow;
     if(statusWindow <= -1){
       cj = creatureDatabase.get((genSelected-1)*3+statusWindow+3);
@@ -1271,16 +1309,44 @@ void writeLog(String toLog){
   if(DEBUG) println(toLog);
 }
 void randomizeRectangles(){
-  if(!RANDOMIZE_RECTANGLES)
+  if(!RANDOMIZE_RECTANGLES) {
+    // If no randomization, we just add the original set of rectangles for every history generation.    
+    rectsHistory.add(rects);
     return;
-    
+  }
+
   rects = new ArrayList<Rectangle>(0);
   for(int i = 0; i < RECTANGLES.length; i++){
     float x1 = RECTANGLES[i].x1 * (1 + random(-1, 1) * (RECTANGLES_MUTABILITY_FACTOR - 1));
     float y1 = RECTANGLES[i].y1 * (1 + random(-1, 1) * (RECTANGLES_MUTABILITY_FACTOR - 1));
     float x2 = RECTANGLES[i].x2 * (1 + random(-1, 1) * (RECTANGLES_MUTABILITY_FACTOR - 1));
     float y2 = RECTANGLES[i].y2 * (1 + random(-1, 1) * (RECTANGLES_MUTABILITY_FACTOR - 1));
-    writeLog("New rectangle " + i + ": (" + x1 + ", " + y1 + ")-(" + x2 + ", " + y2 +")");
+        
+    // Ensure the coordinates are specified "normally" with x1, y1 left bottom and x2, y2 right top.
+    float temp;
+    if(x1 > x2) {
+      temp = x2;
+      x2 = x1;
+      x1 = temp;
+    }
+    if(y1 > y2) {
+      temp = y2;
+      y2 = y1;
+      y1 = y2;
+    }
+    
+    // Ensure it doesn't overlap with the previous one, to prevent weird issues
+    // with creatures poking through rects.
+    // Not necessary (example rectangles also overlap) and undesirable.
+//    if(i>0){
+//      Rectangle prevRect = rects.get(i-1);
+//      x1 = max(prevRect.x2, x1);
+//      
+//      // It could happen that the correction lead to x1 pass further than x2. We correct x2 with a random width.
+//      if(x1 > x2) x2 = x1 + (1 + random(-1, 1) * (RECTANGLES_MUTABILITY_FACTOR - 1));
+//    }
+    
+//    writeLog("New rectangle " + i + ": (" + x1 + ", " + y1 + ")-(" + x2 + ", " + y2 +")");
     Rectangle newRect = new Rectangle(x1, y1, x2, y2);
     rects.add(newRect);
   }
@@ -1289,12 +1355,6 @@ void randomizeRectangles(){
   // As this method is called once for each generation, the ArrayList index is on par with "gen".
   // TODO: replace by a (resizable) associative array, if there is one.
   rectsHistory.add(rects);
-
-  
-  ArrayList<Rectangle> fromHistory = rectsHistory.get(gen);
-  writeLog("From rectsHistory(" + gen + "): " + fromHistory.get(0).x1);
-  fromHistory = rectsHistory.get(gen + 1);
-  writeLog("From rectsHistory(" + (gen + 1) + "): " + fromHistory.get(0).x1);
 }
 void draw(){
   scale(1);
@@ -1345,10 +1405,15 @@ void draw(){
       }else{
         text("Do gens ALAP.",1000,150);
       }
-      text("Median Distance",50,160);
-      textAlign(CENTER);
+      text("Max Distance",50,140);
       textAlign(RIGHT);
-      text(float(round(percentile.get(min(genSelected,percentile.size()-1))[14]*1000))/1000+" m",700,160);
+      text(float(round(percentile.get(min(genSelected,percentile.size()-1))[0]*1000))/1000+" m",700,140);
+
+      textAlign(LEFT);
+      text("Median Distance",50,165);
+      textAlign(RIGHT);
+      text(float(round(percentile.get(min(genSelected,percentile.size()-1))[14]*1000))/1000+" m",700,165);
+
       drawHistogram(760,410,460,280);
       drawGraphImage();
     }
@@ -1413,26 +1478,27 @@ void draw(){
     text("Here are your 1000 randomly generated creatures!!!",windowWidth/2-200,690);
     text("Back",windowWidth-250,690);
   }else if(menu == 4){ // Start simulation
-      // Load latest rects, as they might have changed when watching previous
-      // generations.
-      // gen hasn't been increased at this point yet.
+    // Load latest rects, as they might have changed when watching previous
+    // generations.
+    // gen hasn't been increased at this point yet.
     if(gen > 0) {
-      writeLog("Loading rects for generation " + (gen));
       rects = rectsHistory.get(gen);
     }
-  setGlobalVariables(c[creaturesTested]);
+    setGlobalVariables(c[creaturesTested]);
     camzoom = 0.01;
     setMenu(5);
     if(stepbystepslow){
+      // In step-by-step simulation, show each next creatures a bit faster than the last.
       if(creaturesTested <= 4){
         speed = max(creaturesTested,1);
       }else{
         speed = min(creaturesTested*3-9,1000);
       }
     }else{
+      // An ASAP simulation run
       for(int i = 0; i < 1000; i++){
         setGlobalVariables(c[i]);
-        for(int s = 0; s < 900; s++){
+        for(int s = 0; s < SIMULATION_FRAMES; s++){
           simulate();
           timer++;
         }
@@ -1443,12 +1509,12 @@ void draw(){
     }
   }
   if(menu == 5){ //simulate running
-    if(timer <= 900){
+    if(timer <= SIMULATION_FRAMES){
       textAlign(CENTER);
       textFont(font, 0.96/camzoom);
       background(120,200,255);
       for(int s = 0; s < speed; s++){
-        if(timer < 900){
+        if(timer < SIMULATION_FRAMES){
           simulate();
           timer++;
         }
@@ -1478,7 +1544,7 @@ void draw(){
       text("Time: "+timeShow+" / 15 sec.",windowWidth-10,64);
       text("Playback Speed: x"+speed,windowWidth-10,96);
     }
-    if(timer == 900){
+    if(timer == SIMULATION_FRAMES){
       if(speed < 30){
         noStroke();
         fill(0,0,0,130);
@@ -1491,11 +1557,12 @@ void draw(){
         text("Creature's Distance:",windowWidth/2,300);
         text(float(round(average*200))/1000 + " m",windowWidth/2,400);
       }else{
-        timer = 1020;
+        timer = SIMULATION_FRAMES + 2 * FRAMES_PER_SECOND;
       }
+        
       c[creaturesTested].d = average*0.2;
     }
-    if(timer >= 1020){
+    if(timer >= SIMULATION_FRAMES + 2 * FRAMES_PER_SECOND){
       setMenu(4);
       creaturesTested++;
       if(creaturesTested == 1000){
@@ -1503,7 +1570,7 @@ void draw(){
       }
       cam = 0;
     }
-    if(timer >= 900){
+    if(timer >= SIMULATION_FRAMES){
       timer += speed;
     }
   }
@@ -1589,6 +1656,7 @@ void draw(){
   float mX = mouseX/WINDOW_SIZE;
   float mY = mouseY/WINDOW_SIZE;
   if(abs(menu-9) <= 2 && gensToDo == 0 && !drag){
+    // For overview pages, determine which creature the mouse is over. ID stored in var statusWindow.
     if(abs(mX-639.5) <= 599.5){
       if(menu == 7 && abs(mY-329) <= 312){
         statusWindow = creaturesInPosition[floor((mX-40)/30)+floor((mY-17)/25)*40];
