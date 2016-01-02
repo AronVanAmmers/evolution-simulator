@@ -1250,10 +1250,8 @@ void drawStatusWindow(){
     
     // Respect set speed for minisimulation.
     for(int s = 0; s < speed; s++){
-      if(timer < SIMULATION_FRAMES){
-        simulate();
-        timer++;
-      }
+      simulate();
+      timer++;
     }
     
     int shouldBeWatching = statusWindow;
