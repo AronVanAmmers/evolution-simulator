@@ -65,7 +65,7 @@ final boolean RECTANGLES_PROGRESSIVE_MUTATION = true;
 final float RECTANGLES_MUTABILITY_FACTOR = 1.01;
 
 float histMinValue = -1; //histogram information
-float histMaxValue = 8;
+float histMaxValue = 16;
 int histBarsPerMeter = 10;
 
 // Okay, that's all the easy to edit stuff.
@@ -913,7 +913,7 @@ void setAverage(){
   average = average/n.size();
   
   // Workaround for bug where creatures fall through blocks and get an enormous distance (in the millions)
-  if(average > 10000) {
+  if(abs(average) > 10000) {
     writeLog ("Discarding erroneous result of " + average);
     average = 0;
   }
@@ -1169,7 +1169,7 @@ void drawHistogram(int x, int y, int hw, int hh){
         stroke(128);
       }
       float theX = x+(i-minBar)*barW;
-      text(nf((float)i/histBarsPerMeter,0,1),theX,y+hh+14);
+      text(nf((float)i/histBarsPerMeter,0,0),theX,y+hh+14);
       line(theX,y,theX,y+hh);
     }
   }
