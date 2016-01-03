@@ -17,11 +17,11 @@ final float MINIMUM_NODE_FRICTION = 0.0;
 final float MAXIMUM_NODE_FRICTION = 1.0;
 final float GRAVITY = 0.005; // higher = more friction.
 final float AIR_FRICTION = 0.95; // The lower the number, the more friction.  1 = no friction.  Above 1 = chaos.
-final float MUTABILITY_FACTOR = 1.05; // How fast the creatures mutate.  1 is normal.
+final float MUTABILITY_FACTOR = 1.1; // How fast the creatures mutate.  1 is normal.
 
 // Minimum amount of nodes per creature. Creatures will never mutate below
 // this amount of nodes.
-final int CREATURE_MIN_NODES = 8;
+final int CREATURE_MIN_NODES = 6;
 // Minimum amount of muscles per creature. This isn't always respected as sometimes
 // muscles have to be removed in case of an invalid structure (see checkForOverlap())
 final int CREATURE_MIN_MUSCLES = 8;
@@ -57,8 +57,12 @@ new Rectangle(20,-2.0,25,1)
 
 // Whether to randomize the rectangles
 final boolean RANDOMIZE_RECTANGLES = true;
+
+// Whether to "mutate" the rectangles over time, or use the base set every time. Use a low mutability factor if true.
+final boolean RECTANGLES_PROGRESSIVE_MUTATION = true;
+
 // Mutability factor for randomizing the rectangles.
-final float RECTANGLES_MUTABILITY_FACTOR = 1.2;
+final float RECTANGLES_MUTABILITY_FACTOR = 1.01;
 
 float histMinValue = -1; //histogram information
 float histMaxValue = 8;
@@ -76,6 +80,8 @@ ArrayList<Integer[]> speciesCounts = new ArrayList<Integer[]>(0);
 ArrayList<Integer> topSpeciesCounts = new ArrayList<Integer>(0);
 ArrayList<Creature> creatureDatabase = new ArrayList<Creature>(0);
 ArrayList<Rectangle> rects = new ArrayList<Rectangle>(0);
+// Contains the contents of RECTANGLES as an ArrayList.
+ArrayList<Rectangle> baseRects = new ArrayList<Rectangle>(0);
 // Historical rectangles in case of rectangles randomization. The index is the 
 // generation number.
 ArrayList<ArrayList<Rectangle>> rectsHistory = new ArrayList<ArrayList<Rectangle>>(0);
@@ -1225,7 +1231,7 @@ void drawStatusWindow(){
   colorMode(HSB,1);
   int sp = (cj.n.size()%10)*10+(cj.m.size()%10);
   fill(getColor(sp,true));
-  text("Species: S"+(cj.n.size()%10)+""+(cj.m.size()%10),px,py+48);
+  text("Species: S_"+(cj.n.size())+"_"+(cj.m.size()),px,py+48);
   colorMode(RGB,255);
   if(miniSimulation){
     int py2 = py-125;
@@ -1300,6 +1306,7 @@ void setup(){
   // Initialize rectangles. First gen gets unrandomized ones.
   for(int i = 0; i < RECTANGLES.length; i++){
     rects.add(RECTANGLES[i]);
+    baseRects.add(RECTANGLES[i]);
   }
   rectsHistory.add(rects);
 }
@@ -1313,12 +1320,23 @@ void randomizeRectangles(){
     return;
   }
 
+  ArrayList<Rectangle> sourceRects;
+ 
+  if(RECTANGLES_PROGRESSIVE_MUTATION)
+    // Take the last set of rectangles as the source, i.e. change the rectangles over time.
+    sourceRects = rects;
+  else  
+    // Take the base set of rectangles as the source, i.e. completely random environment for every run.
+    sourceRects = baseRects;
+
   rects = new ArrayList<Rectangle>(0);
+  
   for(int i = 0; i < RECTANGLES.length; i++){
-    float x1 = RECTANGLES[i].x1 * (1 + random(-1, 1) * (RECTANGLES_MUTABILITY_FACTOR - 1));
-    float y1 = RECTANGLES[i].y1 * (1 + random(-1, 1) * (RECTANGLES_MUTABILITY_FACTOR - 1));
-    float x2 = RECTANGLES[i].x2 * (1 + random(-1, 1) * (RECTANGLES_MUTABILITY_FACTOR - 1));
-    float y2 = RECTANGLES[i].y2 * (1 + random(-1, 1) * (RECTANGLES_MUTABILITY_FACTOR - 1));
+    Rectangle sourceRect = sourceRects.get(i);
+    float x1 = sourceRect.x1 * (1 + random(-1, 1) * (RECTANGLES_MUTABILITY_FACTOR - 1));
+    float y1 = sourceRect.y1 * (1 + random(-1, 1) * (RECTANGLES_MUTABILITY_FACTOR - 1));
+    float x2 = sourceRect.x2 * (1 + random(-1, 1) * (RECTANGLES_MUTABILITY_FACTOR - 1));
+    float y2 = sourceRect.y2 * (1 + random(-1, 1) * (RECTANGLES_MUTABILITY_FACTOR - 1));
         
     // Ensure the coordinates are specified "normally" with x1, y1 left bottom and x2, y2 right top.
     float temp;
