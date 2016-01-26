@@ -1,0 +1,39 @@
+# Evolution simulator
+
+Created by [Cary Huang](https://www.youtube.com/channel/UC9z7EZAbkphEMg0SP7rw44A) and released on [OpenProcessing.org](http://www.openprocessing.org/sketch/205807)
+Some small functionality added by Aron van Ammers.
+
+## License
+
+Unknown!
+
+## Introduction
+
+[Original video explanations](https://www.youtube.com/watch?v=GOFws_hhZs8)
+
+## Prerequisites
+
+Install (Processing)[https://processing.org/] v1.5.1.
+
+## Running
+
+Open the .pde file in Processing and run it.
+
+## Configuration: changing the simulation
+
+The top of the file contains some easy to edit variables that influence the simulation. They are documented in the file.
+
+Some interesting ones:
+
+USE_RANDOM_SEED - when true, the simulation is deterministic, i.e. it will give exactly the same results if you would run it again.
+SEED - in combination with USE_RANDOM_SEED, this determines the run. The same number will lead to the same results. 
+
+CREATURE_MIN_NODES - the minimum amount of nodes that creatures must have. Allows for requiring more complex creatures.
+CREATURE_MIN_MUSCLES - the minimum amount of muscles that creatures must have.
+
+MUTABILITY_FACTOR - how fast creatures mutate. Lower values will lead to a monoculture of highly optimized creatures. Higher values give some more variety, but also to a lot of "mishaps" because of nonsuccessful mutations.
+
+RANDOMIZE_RECTANGLES - if true, the rectangles (obstacles) will be randomized over each generation. This will give more versatile creatures an advantage, i.e. creatures that aren't completely optimized to climb a single stairway with identical stairs.
+RECTANGLES_PROGRESSIVE_MUTATION - if true, randomizes the rectangles slightly over each generation. Think of this as a natural environment that slightly changes over time. If false, the rectacles will be completely randomized (from their original configuration) for each generation.
+RECTANGLES_MUTABILITY_FACTOR - sets how much the rectangles are randomized.
+
