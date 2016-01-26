@@ -1,6 +1,7 @@
 # Evolution simulator
 
-Created by [Cary Huang](https://www.youtube.com/channel/UC9z7EZAbkphEMg0SP7rw44A) and released on [OpenProcessing.org](http://www.openprocessing.org/sketch/205807)
+Created by [Cary Huang](https://www.youtube.com/channel/UC9z7EZAbkphEMg0SP7rw44A) and released on [OpenProcessing.org](http://www.openprocessing.org/sketch/205807). Many thanks for creating this educational and entertaining gem of code!
+
 Some small functionality added by Aron van Ammers.
 
 ## License
