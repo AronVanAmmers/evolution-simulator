@@ -26,15 +26,18 @@ The top of the file contains some easy to edit variables that influence the simu
 
 Some interesting ones:
 
-USE_RANDOM_SEED - when true, the simulation is deterministic, i.e. it will give exactly the same results if you would run it again.
-SEED - in combination with USE_RANDOM_SEED, this determines the run. The same number will lead to the same results. 
+Randomization and mutations
+* USE_RANDOM_SEED - when true, the simulation is deterministic, i.e. it will give exactly the same results if you would run it again.
+* SEED - in combination with USE_RANDOM_SEED, this determines the run. The same number will lead to the same results. 
+* MUTABILITY_FACTOR - how fast creatures mutate. Lower values will lead to a monoculture of highly optimized creatures. Higher values give some more variety, but also to a lot of "mishaps" because of nonsuccessful mutations.
 
-CREATURE_MIN_NODES - the minimum amount of nodes that creatures must have. Allows for requiring more complex creatures.
-CREATURE_MIN_MUSCLES - the minimum amount of muscles that creatures must have.
+Minimum complexity
+* CREATURE_MIN_NODES - the minimum amount of nodes that creatures must have. Allows for requiring more complex creatures.
+* CREATURE_MIN_MUSCLES - the minimum amount of muscles that creatures must have.
 
-MUTABILITY_FACTOR - how fast creatures mutate. Lower values will lead to a monoculture of highly optimized creatures. Higher values give some more variety, but also to a lot of "mishaps" because of nonsuccessful mutations.
+Randomization of obstacles
 
-RANDOMIZE_RECTANGLES - if true, the rectangles (obstacles) will be randomized over each generation. This will give more versatile creatures an advantage, i.e. creatures that aren't completely optimized to climb a single stairway with identical stairs.
-RECTANGLES_PROGRESSIVE_MUTATION - if true, randomizes the rectangles slightly over each generation. Think of this as a natural environment that slightly changes over time. If false, the rectacles will be completely randomized (from their original configuration) for each generation.
-RECTANGLES_MUTABILITY_FACTOR - sets how much the rectangles are randomized.
+* RANDOMIZE_RECTANGLES - if true, the rectangles (obstacles) will be randomized over each generation. This will give more versatile creatures an advantage, i.e. creatures that aren't completely optimized to climb a single stairway with identical stairs.
+* RECTANGLES_PROGRESSIVE_MUTATION - if true, randomizes the rectangles slightly over each generation. Think of this as a natural environment that slightly changes over time. If false, the rectacles will be completely randomized (from their original configuration) for each generation.
+* RECTANGLES_MUTABILITY_FACTOR - sets how much the rectangles are randomized.
 
