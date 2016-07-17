@@ -2,76 +2,19 @@
 /* !do not delete the line above, required for linking your tweak if you upload again */
 // Last edited January 17, 2013, UNTIL I brought it back on June 19, 2015!
 
-//These are the easy-to-edit variables.
-final boolean USE_RANDOM_SEED = false;
-// determines whether random factors will be determined by the preset seed.
-//If this is false, the program will run differently every time.  If it's true, it will run exactly the same.
-final int SEED = 38;
-final float WINDOW_SIZE = 1.0; // window size multiplier.  If it's 1, the size is 1280x720.
-// The seed that determines all random factors in the simulation. Same seed = same simulation results,
-// different seed = different simulation results.  Make sure USE_RANDOM_SEED is true for this.
-final float SORT_ANIMATION_SPEED = 5.0; // Determines speed of sorting animation.  Higher number is faster.
-final float MINIMUM_NODE_SIZE = 0.1; // Note: all units are 20 cm.  Meaning, a value of 1 equates to a 20 cm node.
-final float MAXIMUM_NODE_SIZE = 1;
-final float MINIMUM_NODE_FRICTION = 0.0;
-final float MAXIMUM_NODE_FRICTION = 1.0;
-final float GRAVITY = 0.005; // higher = more friction.
-final float AIR_FRICTION = 0.95; // The lower the number, the more friction.  1 = no friction.  Above 1 = chaos.
-final float MUTABILITY_FACTOR = 1.1; // How fast the creatures mutate.  1 is normal.
-
-// Minimum amount of nodes per creature. Creatures will never mutate below
-// this amount of nodes.
-final int CREATURE_MIN_NODES = 6;
-// Minimum amount of muscles per creature. This isn't always respected as sometimes
-// muscles have to be removed in case of an invalid structure (see checkForOverlap())
-final int CREATURE_MIN_MUSCLES = 8;
-
-// The amount of seconds the simulation runs and is counted for fitness.
-final int SIMULATION_SECONDS = 30;
+// Okay, that's all the easy to edit stuff.
+Configuration config = new Configuration();
 
 final boolean haveGround = true;  // true if the ground exists, false if no ground.
 
-// Log debug messages
-final boolean DEBUG = true;
-
-// Speed for showing the creature previews. 1 = real time, 2 = 2x speed, etc. If preview animations
-// are slow on your system, increase this value.
-final int MINI_SIMULATION_SPEED = 2;
-
-//Add rectangular obstacles by filling up this array of rectangles.  The parameters are x1, y1, x2, y2, specifying
-// two opposite vertices.  NOTE: The units are 20 cm, so 1 = 20 cm, and 5 = 1 m.
-// ALSO NOTE: y-values increase as you go down.  So 3 is in the air, and -3 is in the ground.  0 is the surface.
-final Rectangle[] RECTANGLES = {
-// Lower stairs
-new Rectangle(2,-0.2,7,1),
-new Rectangle(4,-0.4,9,1),
-new Rectangle(6,-0.6,11,1),
-new Rectangle(8,-0.8,13,1),
-new Rectangle(10,-1,15,1),
-new Rectangle(12,-1.2,17,1),
-new Rectangle(14,-1.4,19,1),
-new Rectangle(16,-1.6,21,1),
-new Rectangle(18,-1.8,23,1),
-new Rectangle(20,-2.0,25,1)
-};
-
-// Whether to randomize the rectangles
-final boolean RANDOMIZE_RECTANGLES = true;
-
-// Whether to "mutate" the rectangles over time, or use the base set every time. Use a low mutability factor if true.
-final boolean RECTANGLES_PROGRESSIVE_MUTATION = true;
-
-// Mutability factor for randomizing the rectangles.
-final float RECTANGLES_MUTABILITY_FACTOR = 1.01;
+final float WINDOW_SIZE = 1.0; // window size multiplier.  If it's 1, the size is 1280x720.
 
 float histMinValue = -1; //histogram information
 float histMaxValue = 16;
 int histBarsPerMeter = 10;
 
-// Okay, that's all the easy to edit stuff.
-
 final int FRAMES_PER_SECOND = 60;
-final int SIMULATION_FRAMES = SIMULATION_SECONDS * FRAMES_PER_SECOND;
+final int SIMULATION_FRAMES = config.SIMULATION_SECONDS * FRAMES_PER_SECOND;
 
 PFont font;
 ArrayList<Float[]> percentile = new ArrayList<Float[]>(0);
@@ -172,14 +115,14 @@ class Node{
   }
   void applyForces(int i){
     Node ni = n.get(i);
-    ni.vx *= AIR_FRICTION;
-    ni.vy *= AIR_FRICTION;
+    ni.vx *= config.AIR_FRICTION;
+    ni.vy *= config.AIR_FRICTION;
     ni.y += ni.vy;
     ni.x += ni.vx;
   }
   void applyGravity(int i){
     Node ni = n.get(i);
-    ni.vy += GRAVITY;
+    ni.vy += config.GRAVITY;
   }
   void hitWalls(int index){
     Node ni = n.get(index);
@@ -293,12 +236,12 @@ class Node{
     return (new Node(x,y,0,0,m,f));
   }
   Node modifyNode(float mutability){
-    float newX = x+r()*0.5*mutability*MUTABILITY_FACTOR;
-    float newY = y+r()*0.5*mutability*MUTABILITY_FACTOR;
-    float newM = m+r()*0.1*mutability*MUTABILITY_FACTOR;
-    newM = min(max(newM,MINIMUM_NODE_SIZE),MAXIMUM_NODE_SIZE);
-    float newF = f+r()*0.1*mutability*MUTABILITY_FACTOR;
-    newF = min(max(newF,MINIMUM_NODE_FRICTION),MAXIMUM_NODE_FRICTION);
+    float newX = x+r()*0.5*mutability*config.MUTABILITY_FACTOR;
+    float newY = y+r()*0.5*mutability*config.MUTABILITY_FACTOR;
+    float newM = m+r()*0.1*mutability*config.MUTABILITY_FACTOR;
+    newM = min(max(newM,config.MINIMUM_NODE_SIZE),config.MAXIMUM_NODE_SIZE);
+    float newF = f+r()*0.1*mutability*config.MUTABILITY_FACTOR;
+    newF = min(max(newF,config.MINIMUM_NODE_FRICTION),config.MAXIMUM_NODE_FRICTION);
     return (new Node(newX,newY,0,0,newM,newF));//max(m+r()*0.1,0.2),min(max(f+r()*0.1,0),1)
   }
 }
@@ -338,24 +281,24 @@ class Muscle{
   Muscle modifyMuscle(int nodeNum,float mutability){
     int newc1 = c1;
     int newc2 = c2;
-    if(random(0,1)<0.02*mutability*MUTABILITY_FACTOR){
+    if(random(0,1)<0.02*mutability*config.MUTABILITY_FACTOR){
       newc1 = int(random(0,nodeNum));
     }
-    if(random(0,1)<0.02*mutability*MUTABILITY_FACTOR){
+    if(random(0,1)<0.02*mutability*config.MUTABILITY_FACTOR){
       newc2 = int(random(0,nodeNum));
     }
-    float newR = min(max(rigidity*(1+r()*0.9*mutability*MUTABILITY_FACTOR),0.01),0.08);
+    float newR = min(max(rigidity*(1+r()*0.9*mutability*config.MUTABILITY_FACTOR),0.01),0.08);
     float maxMuscleChange = 1+0.025/newR;
-    float newCL = min(max(contractLength+r()*mutability*MUTABILITY_FACTOR,0.4),2);
-    float newEL = min(max(extendLength+r()*mutability*MUTABILITY_FACTOR,0.4),2);
+    float newCL = min(max(contractLength+r()*mutability*config.MUTABILITY_FACTOR,0.4),2);
+    float newEL = min(max(extendLength+r()*mutability*config.MUTABILITY_FACTOR,0.4),2);
     float newCL2 = min(newCL,newEL);
     float newEL2 = min(max(newCL,newEL),newCL2*maxMuscleChange);
     float newCT = contractTime;
     float newET = extendTime;
     if(random(0,1) < 0.5){ //contractTime is changed
-      newCT = ((contractTime-extendTime)*r()*mutability*MUTABILITY_FACTOR+newCT+1)%1;
+      newCT = ((contractTime-extendTime)*r()*mutability*config.MUTABILITY_FACTOR+newCT+1)%1;
     }else{ //extendTime is changed
-      newET = ((extendTime-contractTime)*r()*mutability*MUTABILITY_FACTOR+newET+1)%1;
+      newET = ((extendTime-contractTime)*r()*mutability*config.MUTABILITY_FACTOR+newET+1)%1;
     }
     return new Muscle(max(period+rInt(),0),
     newc1,newc2,newCT,newET,newCL2,newEL2,isItContracted(newCT,newET),newR);
@@ -381,23 +324,23 @@ class Creature{
   Creature modified(int id){
     Creature modifiedCreature = new Creature(id,
     new ArrayList<Node>(0),new ArrayList<Muscle>(0),0,true,
-    creatureTimer+r()*16*mutability*MUTABILITY_FACTOR,min(mutability*MUTABILITY_FACTOR*random(0.8,1.25),2));
+    creatureTimer+r()*16*mutability*config.MUTABILITY_FACTOR,min(mutability*config.MUTABILITY_FACTOR*random(0.8,1.25),2));
     for(int i = 0; i < n.size(); i++){
       modifiedCreature.n.add(n.get(i).modifyNode(mutability));
     }
     for(int i = 0; i < m.size(); i++){
       modifiedCreature.m.add(m.get(i).modifyMuscle(n.size(),mutability));
     }
-    if(random(0,1) < 0.04*mutability*MUTABILITY_FACTOR || n.size() <= CREATURE_MIN_NODES - 1){ //Add a node
+    if(random(0,1) < 0.04*mutability*config.MUTABILITY_FACTOR || n.size() <= config.CREATURE_MIN_NODES - 1){ //Add a node
       modifiedCreature.addRandomNode();
     }
-    if(random(0,1) < 0.04*mutability*MUTABILITY_FACTOR){ //Add a muscle
+    if(random(0,1) < 0.04*mutability*config.MUTABILITY_FACTOR){ //Add a muscle
       modifiedCreature.addRandomMuscle(-1,-1);
     }
-    if(random(0,1) < 0.04*mutability*MUTABILITY_FACTOR && modifiedCreature.n.size() >= CREATURE_MIN_NODES + 1){ //Remove a node
+    if(random(0,1) < 0.04*mutability*config.MUTABILITY_FACTOR && modifiedCreature.n.size() >= config.CREATURE_MIN_NODES + 1){ //Remove a node
       modifiedCreature.removeRandomNode();
     }
-    if(random(0,1) < 0.04*mutability*MUTABILITY_FACTOR && modifiedCreature.m.size() >= CREATURE_MIN_MUSCLES + 1){ //Remove a muscle
+    if(random(0,1) < 0.04*mutability*config.MUTABILITY_FACTOR && modifiedCreature.m.size() >= config.CREATURE_MIN_MUSCLES + 1){ //Remove a muscle
       modifiedCreature.removeRandomMuscle();
     }
     modifiedCreature.checkForOverlap();
@@ -454,8 +397,8 @@ class Creature{
     float distance = sqrt(random(0,1));
     float x = n.get(parentNode).x+cos(ang1)*0.5*distance;
     float y = n.get(parentNode).y+sin(ang1)*0.5*distance;
-    n.add(new Node(x,y,0,0,random(MINIMUM_NODE_SIZE,MAXIMUM_NODE_SIZE),
-    random(MINIMUM_NODE_FRICTION,MAXIMUM_NODE_FRICTION))); //random(0.1,1),random(0,1)
+    n.add(new Node(x,y,0,0,random(config.MINIMUM_NODE_SIZE,config.MAXIMUM_NODE_SIZE),
+    random(config.MINIMUM_NODE_FRICTION,config.MAXIMUM_NODE_FRICTION))); //random(0.1,1),random(0,1)
     int nextClosestNode = 0;
     float record = 100000;
     for(int i = 0; i < n.size()-1; i++){
@@ -955,7 +898,7 @@ void mousePressed(){
 
 void openMiniSimulation(){
   simulationTimer = 0;
-  speed = MINI_SIMULATION_SPEED;
+  speed = config.MINI_SIMULATION_SPEED;
   
   // In the main window, the animation performs slower. Increase speed to let it show at normal speed.
   if(statusWindow < 0)
@@ -1272,8 +1215,8 @@ void drawStatusWindow(){
 }
 void setup(){
   size(1280, 720, P2D); // Don't change this.  It ruins everything.
-  if(USE_RANDOM_SEED){
-    randomSeed(SEED);
+  if(config.USE_RANDOM_SEED){
+    randomSeed(config.SEED);
   }
   smooth();
   ellipseMode(CENTER);
@@ -1304,17 +1247,17 @@ void setup(){
   textAlign(CENTER);
   
   // Initialize rectangles. First gen gets unrandomized ones.
-  for(int i = 0; i < RECTANGLES.length; i++){
-    rects.add(RECTANGLES[i]);
-    baseRects.add(RECTANGLES[i]);
+  for(int i = 0; i < config.RECTANGLES.length; i++){
+    rects.add(config.RECTANGLES[i]);
+    baseRects.add(config.RECTANGLES[i]);
   }
   rectsHistory.add(rects);
 }
 void writeLog(String toLog){
-  if(DEBUG) println(toLog);
+  if(config.DEBUG) println(toLog);
 }
 void randomizeRectangles(){
-  if(!RANDOMIZE_RECTANGLES) {
+  if(!config.RANDOMIZE_RECTANGLES) {
     // If no randomization, we just add the original set of rectangles for every history generation.    
     rectsHistory.add(rects);
     return;
@@ -1322,7 +1265,7 @@ void randomizeRectangles(){
 
   ArrayList<Rectangle> sourceRects;
  
-  if(RECTANGLES_PROGRESSIVE_MUTATION)
+  if(config.RECTANGLES_PROGRESSIVE_MUTATION)
     // Take the last set of rectangles as the source, i.e. change the rectangles over time.
     sourceRects = rects;
   else  
@@ -1331,12 +1274,12 @@ void randomizeRectangles(){
 
   rects = new ArrayList<Rectangle>(0);
   
-  for(int i = 0; i < RECTANGLES.length; i++){
+  for(int i = 0; i < config.RECTANGLES.length; i++){
     Rectangle sourceRect = sourceRects.get(i);
-    float x1 = sourceRect.x1 * (1 + random(-1, 1) * (RECTANGLES_MUTABILITY_FACTOR - 1));
-    float y1 = sourceRect.y1 * (1 + random(-1, 1) * (RECTANGLES_MUTABILITY_FACTOR - 1));
-    float x2 = sourceRect.x2 * (1 + random(-1, 1) * (RECTANGLES_MUTABILITY_FACTOR - 1));
-    float y2 = sourceRect.y2 * (1 + random(-1, 1) * (RECTANGLES_MUTABILITY_FACTOR - 1));
+    float x1 = sourceRect.x1 * (1 + random(-1, 1) * (config.RECTANGLES_MUTABILITY_FACTOR - 1));
+    float y1 = sourceRect.y1 * (1 + random(-1, 1) * (config.RECTANGLES_MUTABILITY_FACTOR - 1));
+    float x2 = sourceRect.x2 * (1 + random(-1, 1) * (config.RECTANGLES_MUTABILITY_FACTOR - 1));
+    float y2 = sourceRect.y2 * (1 + random(-1, 1) * (config.RECTANGLES_MUTABILITY_FACTOR - 1));
         
     // Ensure the coordinates are specified "normally" with x1, y1 left bottom and x2, y2 right top.
     float temp;
@@ -1448,12 +1391,12 @@ void draw(){
       for(int x = 0; x < 40; x++){
         n.clear();
         m.clear();
-        int nodeNum = int(random(CREATURE_MIN_NODES, 2* CREATURE_MIN_NODES));
+        int nodeNum = int(random(config.CREATURE_MIN_NODES, 2* config.CREATURE_MIN_NODES));
         int muscleNum = int(random(nodeNum-1,nodeNum*3-6));
         for(int i = 0; i < nodeNum; i++){
           n.add(new Node(random(-1,1),random(-1,1),0,0,
-          random(MINIMUM_NODE_SIZE,MAXIMUM_NODE_SIZE),
-          random(MINIMUM_NODE_FRICTION,MAXIMUM_NODE_FRICTION))); //replaced all nodes' sizes with 0.4, used to be random(0.1,1), random(0,1)
+          random(config.MINIMUM_NODE_SIZE,config.MAXIMUM_NODE_SIZE),
+          random(config.MINIMUM_NODE_FRICTION,config.MAXIMUM_NODE_FRICTION))); //replaced all nodes' sizes with 0.4, used to be random(0.1,1), random(0,1)
         }
         for(int i = 0; i < muscleNum; i++){
           int tc1;
@@ -1660,9 +1603,9 @@ void draw(){
       drawCreatureWhole(cj,x3*30+55,y3*25+40,0);
     }
     if(stepbystepslow){
-      timer += 1*SORT_ANIMATION_SPEED;
+      timer += 1*config.SORT_ANIMATION_SPEED;
     }else{
-      timer += 3*SORT_ANIMATION_SPEED;
+      timer += 3*config.SORT_ANIMATION_SPEED;
     }
     if(timer > 60*PI){
       drawScreenImage(1);
