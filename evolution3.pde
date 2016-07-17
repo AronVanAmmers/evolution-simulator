@@ -631,6 +631,7 @@ void drawGraph(int graphWidth, int graphHeight){
 }
 void drawLines(int x, int y, int graphWidth, int graphHeight){
   graphImage.beginDraw();
+  //graphImage.smooth();
   graphImage.smooth();
   graphImage.background(220);
   if(gen >= 1){
