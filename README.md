@@ -4,17 +4,21 @@ Created by [Cary Huang](https://www.youtube.com/channel/UC9z7EZAbkphEMg0SP7rw44A
 
 Some small functionality added by Aron van Ammers.
 
+Up to now I have been unable to get in contact with the original author Cary Huang. Cary, if you read this, I'd be very happy to move this code over to a repo owned by you with proper attribution of the code. Just message me here.
+
 ## License
 
 Unknown!
 
 ## Introduction
 
-[Original video explanations](https://www.youtube.com/watch?v=GOFws_hhZs8)
+[Original video explanations by Cary Huang](https://www.youtube.com/watch?v=GOFws_hhZs8)
 
 ## Prerequisites
 
-Install (Processing)[https://processing.org/] v1.5.1.
+Install [Processing](https://processing.org/) v1.5.1. 
+
+Note that the code currently is NOT compatible with the more recent Processing versions 2 and 3. You'll get an error message "GraphImage cannot be resolved or is not a field" when running. Happy to accept a pull request for anyone making it compatible with Processing 3.
 
 ## Running
 
